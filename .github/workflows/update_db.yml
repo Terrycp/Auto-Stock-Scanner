@@ -1,0 +1,58 @@
+name: Update Stock Database
+
+on:
+  schedule:
+    # Run daily at 9:00 AM UTC (adjust time as needed)
+    - cron: '0 9 * * *'
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  update-database:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas beautifulsoup4 lxml
+      
+      - name: Run stock data fetcher
+        run: python fetch_data.py
+        working-directory: app_github
+      
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Check for changes
+        id: verify_changed_files
+        run: |
+          if git diff --quiet app_github/stock_data.db; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push changes
+        if: steps.verify_changed_files.outputs.changed == 'true'
+        run: |
+          git add app_github/stock_data.db
+          git commit -m "🤖 Auto-update stock database - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          git push
+      
+      - name: No changes to commit
+        if: steps.verify_changed_files.outputs.changed == 'false'
+        run: |
+          echo "✅ Database already up-to-date, no changes to commit"
