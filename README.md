@@ -44,6 +44,7 @@ python -m PyInstaller --onefile -w app_github.py
 Main UI
 ![Main UI](screenshots/main-ui.png)
 
+Filters and Export
 ![Filters and Export](screenshots/filter-export.png)
 
 ## Project Structure
